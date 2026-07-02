@@ -574,7 +574,12 @@ UI.leader = function (x) {
   if (G.hit('name')) G.openTextEntry({ title: 'PLAYER NAME', hint: '2-16 characters', max: 16, cb: v => { G.meta.playerName = v.slice(0, 16); G.saveMeta(); UI.leaderCache = null; } });
   if (G.hit('link') && Net.enabled && !Net.session) G.openTextEntry({
     title: 'LINK ACCOUNT', hint: 'your email — we send a magic sign-in link', max: 60, filter: /[\w@\.\-\+]/,
-    cb: v => { Net.signIn(v).then(ok => G.toast(ok ? 'CHECK YOUR EMAIL' : 'COULD NOT SEND LINK', ok ? '#58f08a' : '#ff5252')); },
+    cb: v => {
+      Net.signIn(v).then(ok => G.toast(
+        ok === true ? 'CHECK YOUR EMAIL' :
+          ok === 'local' ? 'LINKING ONLY WORKS ON THE DEPLOYED SITE' : 'COULD NOT SEND LINK',
+        ok === true ? '#58f08a' : '#ff5252'));
+    },
   });
   if (G.hit('signout') && Net.session) { Net.signOut(); G.toast('SIGNED OUT', '#8a93a8'); }
   if (G.hit('pause')) { G.state = 'title'; UI.sel = 0; Au.sfx('uiBack'); }

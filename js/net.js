@@ -89,10 +89,14 @@ Net.freshToken = async function () {
 };
 Net.signIn = async function (email) {
   if (!Net.enabled) return false;
+  // magic links redirect back to the page — impossible for file:// local play
+  if (typeof location === 'undefined' || !/^https?:$/.test(location.protocol)) return 'local';
+  const redirect = location.origin + location.pathname;
   try {
-    const r = await fetch(CFG.SUPABASE_URL + '/auth/v1/magiclink', {
+    // GoTrue takes redirect_to as a QUERY PARAM, not in the body
+    const r = await fetch(CFG.SUPABASE_URL + '/auth/v1/otp?redirect_to=' + encodeURIComponent(redirect), {
       method: 'POST', headers: { 'apikey': CFG.SUPABASE_ANON_KEY, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, options: { email_redirect_to: (typeof location !== 'undefined' ? location.origin + location.pathname : '') } }),
+      body: JSON.stringify({ email, create_user: true }),
     });
     return r.status < 300;
   } catch (e) { return false; }
