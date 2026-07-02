@@ -195,7 +195,9 @@ En.transformAll = function (stronger) {
 
 // ---------- status ----------
 En.status = function (e, k, dur) {
-  if (e.boss && (k === 'fear' || k === 'charm' || k === 'frozen') ) dur *= .35;
+  // bosses are immune to anything that would stop their AI outright —
+  // a fleeing/frozen boss softlocks the fight (and its phase logic)
+  if (e.boss && (k === 'fear' || k === 'charm' || k === 'frozen' || k === 'sleep' || k === 'confuse')) return;
   e.status[k] = Math.max(e.status[k] || 0, dur);
 };
 En.statusNear = function (x, y, r, k, dur) {
@@ -210,10 +212,10 @@ En.statusNear = function (x, y, r, k, dur) {
 En.damage = function (e, dmg, ctx) {
   if (e.dead || e.spawnProt > 0) return;
   ctx = ctx || {};
-  // boss shield nodes / invulnerable core
+  // boss shield nodes / invulnerable core (computed live — never a stale flag)
   if (e.boss) {
     if (ctx.shot && G.Boss.interceptShot(e, ctx.shot)) return;
-    if (e.invulnCore) { Fx.float(e.x, e.y - e.r - 6, 'SHIELDED', '#8a93a8'); return; }
+    if (G.Boss.coreShielded(e)) { Fx.float(e.x, e.y - e.r - 6, 'SHIELDED', '#8a93a8'); return; }
   }
   // firewall: shielded from the front
   if (e.def.shielded && ctx.shot) {

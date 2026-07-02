@@ -89,7 +89,11 @@ Boss.spawnInRoom = function (room, depth) {
   }
   (G.run.usedBosses = G.run.usedBosses || []).push(kind);
   if (kind === 'singularity') {
-    for (let i = 0; i < 6; i++) e.shields.push({ a: i * G.TAU / 6, hp: 12, dead: false });
+    for (let i = 0; i < 6; i++) {
+      const a = i * G.TAU / 6;
+      // positioned immediately so they're hittable from frame one
+      e.shields.push({ a, hp: 12, dead: false, x: e.x + Math.cos(a) * 52, y: e.y + Math.sin(a) * 40 });
+    }
   }
   if (kind === 'balancer') { e.balA = 0; e.balR = 60; }
   if (kind === 'leviathan') { e.grow = 1; }
@@ -579,11 +583,17 @@ Boss.leviathan = function (e, dt, p) {
 
 // shield node hit testing: intercept damage in En.damage via Boss.onHurt? Simpler:
 // shots collide with shields in Sh update — but we do it here via a check hook called from En.damage.
+// live invulnerability check — derived from hp, never from a cached flag,
+// so a stalled AI tick can never leave a boss permanently unkillable
+Boss.coreShielded = function (e) {
+  return e.bossKind === 'singularity' && Boss.phaseOf(e) === 1 && e.shields.some(s => !s.dead);
+};
+
 Boss.interceptShot = function (e, shot) {
   // returns true if a shield absorbed the shot
   if (e.bossKind !== 'singularity') return false;
   for (const s of e.shields) {
-    if (s.dead) continue;
+    if (s.dead || s.x === undefined) continue;
     if (G.dist(shot.x, shot.y, s.x, s.y) < 11) {
       s.hp -= shot.dmg;
       Fx.hitSpark(s.x, s.y, '#ff3355');
@@ -592,7 +602,7 @@ Boss.interceptShot = function (e, shot) {
       return true;
     }
   }
-  if (e.invulnCore) { Fx.float(e.x, e.y - e.r - 6, 'SHIELDED', '#8a93a8'); return true; }
+  if (Boss.coreShielded(e)) { Fx.float(e.x, e.y - e.r - 6, 'SHIELDED', '#8a93a8'); return true; }
   return false;
 };
 
