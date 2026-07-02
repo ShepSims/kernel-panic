@@ -9,7 +9,7 @@ G.startRun = function (opts) {
   const seedStr = opts.seedStr || (opts.continueData ? opts.continueData.seedStr : G.seedToStr((Math.random() * 1e9) | 0));
   const seed = G.hashStr(seedStr);
   G.run = {
-    seed, seedStr, seeded: !!opts.seeded || (opts.continueData ? opts.continueData.seeded : false),
+    seed, seedStr, // internal only — runs are always freshly random
     endless: !!opts.endless || (opts.continueData ? opts.continueData.endless : false),
     endlessLoop: 0,
     depth: opts.continueData ? opts.continueData.depth : 1,
@@ -313,9 +313,6 @@ function frame(ts) {
     case 'title':
       Au.setTheme(7);
       UI.title(x, dt);
-      break;
-    case 'seedentry':
-      UI.seedentry(x);
       break;
     case 'run':
       updateRun(dt);

@@ -26,7 +26,7 @@ A roguelike dungeon crawler. You are the last software engineer at Cognisys, des
 - **Special rooms** — treasure, shops, secret rooms (bomb the walls), challenge gauntlets, cursed rooms, and post-boss Overclock deals (trade max health for power).
 - **Environmental storytelling** — the fall of Cognisys told through terminal logs, graffiti, and what's left behind. No dialogue.
 - **Game feel** — screen shake, hitstop, particles, dynamic lighting, squash-and-stretch, procedural per-biome music and synthesized SFX.
-- **Meta systems** — save/continue, 42 achievements, item unlocks, statistics screen, item log, seeded runs, endless mode.
+- **Meta systems** — save/continue, achievements, item unlocks, statistics screen, item log, endless mode, online leaderboards, data-pack mods.
 
 ## Health & economy
 

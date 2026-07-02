@@ -13,7 +13,7 @@ module.exports = async function handler(req, res) {
     if (!isUuid(b.run_id) || !isUuid(b.device_id)) return res.status(400).json({ error: 'bad ids' });
     const name = cleanName(b.name);
     if (!name) return res.status(400).json({ error: 'bad name' });
-    const mode = ['normal', 'seeded', 'endless'].includes(b.mode) ? b.mode : null;
+    const mode = ['normal', 'endless'].includes(b.mode) ? b.mode : null;
     if (!mode) return res.status(400).json({ error: 'bad mode' });
     const num = (v, lo, hi) => (typeof v === 'number' && isFinite(v) && v >= lo && v <= hi) ? Math.round(v) : null;
     const floor = num(b.floor, 1, 99), kills = num(b.kills, 0, 100000),

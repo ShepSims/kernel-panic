@@ -42,7 +42,6 @@ Meta.ACH = [
   { id: 'speed_floor', name: 'Hotfix Speedrun', desc: 'Clear floor 1 in under 90 seconds', chk: (m, r) => !!(r && r.flags && r.flags.fastFloor) },
   { id: 'endless6', name: 'Overtime', desc: 'Reach floor 7+ in endless', chk: m => m.bestEndless >= 7 },
   { id: 'endless12', name: 'Who Needs Sleep', desc: 'Reach floor 12+ in endless', chk: m => m.bestEndless >= 12 },
-  { id: 'seeded', name: 'Deterministic', desc: 'Finish a seeded run', chk: (m, r) => !!(r && r.flags && r.flags.seededDone) },
   { id: 'glass', name: 'Living Dangerously', desc: 'Win with 1 max battery', chk: (m, r) => !!(r && r.flags && r.flags.glassWin) },
   { id: 'pacifist_shop', name: 'Loyal Customer', desc: 'Buy 3 items from one shop', chk: (m, r) => !!(r && r.flags && r.flags.shopSpree) },
   { id: 'synergy4', name: 'It All Connects', desc: 'Have 4+ shot-modifier items at once', chk: (m, r) => { if (!r || !r.player) return false; const mm = r.player.mods; return [mm.pierce, mm.homing, mm.split, mm.bounce, mm.explode, mm.chain, mm.wavy, mm.boomerang].filter(v => v > 0).length >= 4; } },
@@ -108,7 +107,6 @@ Meta.stat = function (k, n) { G.meta[k] = (G.meta[k] || 0) + (n === undefined ? 
 Meta.onDeath = function () {
   G.meta.deaths++; G.meta.runs++;
   G.meta.totalTime += G.run.time;
-  G.meta.lastSeed = G.run.seedStr;
   Meta.check();
   G.saveMeta();
   G.clearRunSave();
@@ -131,7 +129,6 @@ Meta.onWin = function () {
   G.run.won = true;
   G.Net.submitRun();
   G.run.flags = G.run.flags || {};
-  if (G.run.seeded) G.run.flags.seededDone = true;
   if (G.run.player.hpMax === 1) G.run.flags.glassWin = true;
   Meta.check();
   G.saveMeta();
@@ -154,7 +151,7 @@ G.saveRun = function () {
     const p = G.run.player;
     const data = {
       seed: G.run.seed, seedStr: G.run.seedStr, depth: G.run.depth,
-      endless: G.run.endless, seeded: G.run.seeded, time: G.run.time,
+      endless: G.run.endless, time: G.run.time,
       rulesetId: G.run.rulesetId, runId: G.run.runId,
       stats: G.run.stats, bossesKilled: G.run.bossesKilled || 0,
       player: {

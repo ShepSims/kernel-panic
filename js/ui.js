@@ -75,7 +75,6 @@ UI.drawHUD = function (x) {
   x.font = '7px monospace'; x.textAlign = 'center';
   x.fillStyle = Dg.biome().accent;
   x.fillText('B' + G.run.depth + ' · ' + Dg.biome().name, G.W / 2 + 40, 12);
-  if (G.run.seeded) { x.fillStyle = '#8a93a8'; x.fillText('SEED ' + G.run.seedStr, G.W / 2 + 40, 22); }
   if (G.run.endless) { x.fillStyle = '#ff4da6'; x.fillText('ENDLESS', G.W / 2 + 40, 22); }
   x.textAlign = 'left';
   UI.drawMinimap(x);
@@ -179,7 +178,7 @@ UI.title = function (x, dt) {
   x.textAlign = 'left';
   const hasRun = !!G.loadRunSave();
   const items = (hasRun ? ['CONTINUE RUN'] : []).concat(
-    ['NEW RUN', 'SEEDED RUN', 'ENDLESS MODE', 'LEADERBOARDS', 'MODS', 'STATISTICS', 'ACHIEVEMENTS', 'ITEM LOG', 'HELP']);
+    ['NEW RUN', 'ENDLESS MODE', 'LEADERBOARDS', 'MODS', 'STATISTICS', 'ACHIEVEMENTS', 'ITEM LOG', 'HELP']);
   UI.menuNav(items.length);
   UI.drawMenu(x, items, 138, 13);
   // active mod badge
@@ -199,7 +198,6 @@ UI.title = function (x, dt) {
     UI.sel = 0;
     if (pick === 'CONTINUE RUN') G.startRun({ continueData: G.loadRunSave() });
     else if (pick === 'NEW RUN') G.startRun({});
-    else if (pick === 'SEEDED RUN') { G.state = 'seedentry'; G.seedBuf = ''; }
     else if (pick === 'ENDLESS MODE') G.startRun({ endless: true });
     else if (pick === 'LEADERBOARDS') { G.state = 'leader'; UI.leaderCache = null; }
     else if (pick === 'MODS') { G.state = 'mods'; UI.sel = 0; }
@@ -208,36 +206,6 @@ UI.title = function (x, dt) {
     else if (pick === 'ITEM LOG') { G.state = 'itemlog'; UI.logScroll = 0; }
     else if (pick === 'HELP') G.state = 'help';
   }
-};
-
-// ---------- seed entry ----------
-G.seedKey = function (e) {
-  if (e.key === 'Enter') {
-    const s = G.seedBuf.trim() || String((Math.random() * 1e9) | 0);
-    G.startRun({ seedStr: s.toUpperCase(), seeded: true });
-    return;
-  }
-  if (e.key === 'Escape') { G.state = 'title'; return; }
-  if (e.key === 'Backspace') { G.seedBuf = G.seedBuf.slice(0, -1); return; }
-  if (/^[a-zA-Z0-9\-]$/.test(e.key) && G.seedBuf.length < 12) G.seedBuf += e.key.toUpperCase();
-};
-UI.seedentry = function (x) {
-  UI.frame(x, 'SEEDED RUN');
-  x.textAlign = 'center';
-  x.font = '8px monospace'; x.fillStyle = '#8a93a8';
-  x.fillText('same seed = same dungeon, same items, same fate', G.W / 2, 70);
-  x.fillText('type a seed and press ENTER · ESC to go back', G.W / 2, 84);
-  x.font = 'bold 16px monospace';
-  x.fillStyle = '#12141f'; x.fillRect(G.W / 2 - 90, 110, 180, 26);
-  x.strokeStyle = '#4df3ff'; x.strokeRect(G.W / 2 - 90.5, 110.5, 181, 26);
-  x.fillStyle = '#eef4ff';
-  const cursor = Math.sin(G.time * 6) > 0 ? '_' : ' ';
-  x.fillText((G.seedBuf || '') + cursor, G.W / 2, 128);
-  if (G.meta.lastSeed) {
-    x.font = '7px monospace'; x.fillStyle = '#454d63';
-    x.fillText('last run seed: ' + G.meta.lastSeed, G.W / 2, 160);
-  }
-  x.textAlign = 'left';
 };
 
 // ---------- pause ----------
@@ -265,7 +233,7 @@ UI.pause = function (x) {
     ['DAMAGE', st.dmg.toFixed(2)], ['FIRE RATE', st.fireRate.toFixed(2)],
     ['SHOT SPEED', st.shotspd.toFixed(0)], ['RANGE', st.range.toFixed(0)],
     ['MOVE SPEED', st.moveSpd.toFixed(0)], ['LUCK', st.luck],
-    ['SEED', G.run.seedStr], ['FLOOR', G.run.depth],
+    ['FLOOR', G.run.depth],
     ['TIME', UI.fmtTime(G.run.time)], ['KILLS', G.run.stats.kills || 0],
   ];
   x.textAlign = 'left';
@@ -304,7 +272,6 @@ UI.dead = function (x, dt) {
     'bugs closed: ' + d.kills,
     'items collected: ' + d.items,
     'time: ' + UI.fmtTime(d.time),
-    'seed: ' + d.seed,
   ];
   if (G.lastRunPayload) {
     let line = 'score: ' + G.lastRunPayload.score;
@@ -315,10 +282,9 @@ UI.dead = function (x, dt) {
   rows.forEach((r, i) => x.fillText(r, G.W / 2, 120 + i * 13));
   if (G.hit('name') && G.Net.pendingSubmit) G.openTextEntry({ title: 'PLAYER NAME', hint: '2-16 characters — shown on the leaderboard', max: 16, cb: v => G.Net.submitPendingWithName(v.slice(0, 16)) });
   x.fillStyle = Math.sin(G.time * 4) > 0 ? '#4df3ff' : '#8a93a8';
-  x.fillText('[R] RETRY   ·   [S] RETRY SAME SEED   ·   [ENTER] TITLE', G.W / 2, 220);
+  x.fillText('[R] RETRY   ·   [ENTER] TITLE', G.W / 2, 220);
   x.textAlign = 'left';
   if (G.hit('restart')) G.startRun({});
-  else if (G.hit('down')) G.startRun({ seedStr: d.seed, seeded: true });
   else if (G.hit('confirm')) { G.state = 'title'; UI.sel = 0; Au.setTheme(7); }
 };
 
@@ -336,7 +302,7 @@ UI.win = function (x, dt) {
   x.font = 'italic 8px monospace'; x.fillStyle = '#8a93a8';
   x.fillText(w.line, G.W / 2, 90);
   x.font = '8px monospace'; x.fillStyle = '#eef4ff';
-  const rows = ['PARADIGM decommissioned', 'kills: ' + w.kills + ' · items: ' + w.items + ' · time: ' + UI.fmtTime(w.time), 'seed: ' + w.seed];
+  const rows = ['PARADIGM decommissioned', 'kills: ' + w.kills + ' · items: ' + w.items + ' · time: ' + UI.fmtTime(w.time)];
   if (G.lastRunPayload) {
     let line = 'score: ' + G.lastRunPayload.score;
     if (G.Net.enabled && G.Net.pendingSubmit) line += '  ·  [N] SET NAME & SUBMIT';

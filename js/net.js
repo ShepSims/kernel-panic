@@ -121,7 +121,7 @@ Net.buildPayload = function () {
     ruleset_id: run.rulesetId || Net.officialRuleset,
     device_id: Net.deviceId(),
     name: G.meta.playerName || 'ANON',
-    mode: run.endless ? 'endless' : run.seeded ? 'seeded' : 'normal',
+    mode: run.endless ? 'endless' : 'normal',
     floor: G.clamp(run.depth, 1, 99),
     kills: G.clamp(run.stats.kills || 0, 0, 100000),
     items: G.clamp(p.items.length, 0, 500),

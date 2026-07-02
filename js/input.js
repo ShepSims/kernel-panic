@@ -17,7 +17,6 @@ const KEYMAP = {
 window.addEventListener('keydown', e => {
   const k = KEYMAP[e.code];
   if (e.code === 'Tab' || e.code.startsWith('Arrow') || e.code === 'Space') e.preventDefault();
-  if (G.state === 'seedentry') { G.seedKey(e); return; }
   if (G.state === 'textentry') { G.textKey(e); return; }
   if (k) { if (!G.keys[k]) G.keysHit[k] = true; G.keys[k] = true; }
 });

@@ -5,7 +5,7 @@
 window.G = {
   W: 480, H: 320, TILE: 32, HUD_H: 32,
   RW: 15, RH: 9,               // room size in tiles incl. walls
-  state: 'boot',               // boot|title|seedentry|run|pause|dead|win|stats|ach|help|itemlog
+  state: 'boot',               // boot|title|run|pause|dead|win|stats|ach|help|itemlog|leader|mods|modbrowse|textentry
   time: 0, frame: 0,
   run: null,                   // current run state
   meta: null,                  // persistent save
@@ -87,7 +87,6 @@ G.loadMeta = function () {
     achievements: {},        // id -> true
     unlocks: {},             // unlock id -> true
     seenItems: {},           // itemId -> true (item log)
-    lastSeed: null,
     settings: { music: true, sfx: true, screenshake: true },
   }, m || {});
 };
