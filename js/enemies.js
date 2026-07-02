@@ -574,7 +574,16 @@ AI.burrower = (e, dt, p) => {
     const a = G.ang(e.x, e.y, p.x, p.y);
     e.x += Math.cos(a) * e.spd * dt; e.y += Math.sin(a) * e.spd * dt;
     if (G.frame % 6 === 0) Fx.dust(e.x, e.y);
-    if (e.burT <= 0) { e.state = 'tele'; e.tele = e.def.tele; }
+    if (e.burT <= 0) {
+      // never surface inside the player's protected circle
+      const d = G.dist(e.x, e.y, p.x, p.y);
+      if (d < 60) {
+        const away = d > .001 ? G.ang(p.x, p.y, e.x, e.y) : G.fR(0, G.TAU);
+        e.x = G.clamp(p.x + Math.cos(away) * 60, 40, G.W - 40);
+        e.y = G.clamp(p.y + Math.sin(away) * 60, G.HUD_H + 40, G.H - 40);
+      }
+      e.state = 'tele'; e.tele = e.def.tele;
+    }
   } else if (e.state === 'tele') {
     e.tele -= dt; e.vx = e.vy = 0;
     if (e.tele <= 0) {

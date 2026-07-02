@@ -372,8 +372,10 @@ Boss.scheduler = function (e, dt, p) {
     // on-beat context switches between quadrant anchors
     if (e.subT <= 0) {
       e.subT = e.phase === 2 ? 3 : 2.2;
-      const anchors = [[cx - 110, cy - 60], [cx + 110, cy - 60], [cx - 110, cy + 50], [cx + 110, cy + 50]];
-      const [nx, ny] = anchors[G.R(0, 3)];
+      // only consider anchors outside the player's protected circle
+      const anchors = [[cx - 110, cy - 60], [cx + 110, cy - 60], [cx - 110, cy + 50], [cx + 110, cy + 50]]
+        .filter(([ax, ay]) => G.dist(ax, ay, p.x, p.y) > 85);
+      const [nx, ny] = anchors.length ? anchors[G.R(0, anchors.length - 1)] : Boss.ringSpot(p, 95, 160);
       Fx.tp(e.x, e.y, '#ffe24d');
       e.x = nx; e.y = ny;
       Fx.tp(e.x, e.y, '#ffe24d');
