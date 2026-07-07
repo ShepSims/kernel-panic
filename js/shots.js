@@ -420,7 +420,7 @@ Sh.onHit = function (s, e, idx) {
   if (m.burn && G.rng() < m.burn * lk) G.En.status(e, 'burn', 3);
   if (m.slow && G.rng() < m.slow * lk) G.En.status(e, 'slow', 2.5);
   if (m.fear && G.rng() < m.fear * lk) G.En.status(e, 'fear', 2);
-  if (m.charm && G.rng() < m.charm * lk) G.En.charm(e);
+  // (charm now procs on the killing blow — see En.kill — so it's readable)
   if (m.uniq.stickyMark) e.sticky = true;
   if (m.uniq.critStun && s.crit) G.En.status(e, 'frozen', 1.2);
   if (m.knock) { const a = Math.atan2(s.vy, s.vx); e.kx = (e.kx || 0) + Math.cos(a) * 240; e.ky = (e.ky || 0) + Math.sin(a) * 240; }

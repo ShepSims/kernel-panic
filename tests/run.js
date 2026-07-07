@@ -3,7 +3,7 @@
 const { execFileSync } = require('child_process');
 const path = require('path');
 let ok = true;
-for (const suite of ['smoke', 'skin', 'netmods']) {
+for (const suite of ['smoke', 'skin', 'netmods', 'charm']) {
   try {
     const out = execFileSync(process.execPath, [path.join(__dirname, suite + '.js')], { encoding: 'utf8' });
     console.log('--- ' + suite + ' ---\n' + out.trim());

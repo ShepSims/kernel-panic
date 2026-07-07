@@ -180,8 +180,9 @@ En.spawnDecoy = function (x, y) {
 };
 En.charm = function (e) {
   if (e.boss) return;
-  e.friendly = true; e.allyT = 15;
-  Fx.spawn(e.x, e.y, { n: 6, col: ['#ff4da6', '#fff'], life: .5, grav: -60 });
+  e.friendly = true; e.charmed = true; e.allyT = 15;
+  e.status = {}; // charmed minds hold no grudges (or debuffs)
+  Fx.spawn(e.x, e.y, { n: 8, col: ['#ff4da6', '#fff'], life: .5, grav: -60 });
 };
 En.transformAll = function (stronger) {
   const room = G.run.cur;
@@ -256,6 +257,19 @@ En.kill = function (e, ctx) {
     Fx.deathBurst(e.x, e.y, e.def.col);
     return;
   }
+  // charm: the killing blow recruits instead of kills
+  const pl = G.run.player;
+  const charm = pl && pl.mods ? pl.mods.charm : 0;
+  if (charm > 0 && !e.friendly && !e.boss && !e.recruited && !e.isFake &&
+    G.rng() < charm * (1 + pl.stats.luck * .06)) {
+    e.recruited = true;
+    e.hp = Math.max(2, Math.round(e.hpMax * .5));
+    e.state = 'idle'; e.kx = e.ky = 0;
+    En.charm(e);
+    Fx.float(e.x, e.y - e.r - 6, 'RECRUITED!', '#ff4da6');
+    Au.sfx('levelup');
+    return;
+  }
   e.dead = true;
   G.meta.kills++; G.run.stats.kills = (G.run.stats.kills || 0) + 1;
   Fx.deathBurst(e.x, e.y, e.def.col, e.r > 12);
@@ -307,11 +321,13 @@ En.eshot = function (x, y, ang, spd, dmg, opts) {
   opts = opts || {};
   if (G.run.cur.eshots.length > 90) return;
   const slow = G.run.player.hasUniq('slowBullets') ? .8 : 1;
+  // bullets fired by charmed/friendly units fight FOR you
+  const friendly = !!(En._shooter && En._shooter.friendly);
   G.run.cur.eshots.push({
     x, y, vx: Math.cos(ang) * spd * slow, vy: Math.sin(ang) * spd * slow,
     r: opts.r || 4, dmg: dmg || 1, t: 0, life: opts.life || 4,
-    col: opts.col || '#ff5252', homing: opts.homing || 0, hook: opts.hook || false,
-    from: opts.from, forkT: opts.fork, oil: opts.oil || false,
+    col: friendly ? '#58f08a' : (opts.col || '#ff5252'), homing: opts.homing || 0, hook: opts.hook || false,
+    from: opts.from, forkT: opts.fork, oil: opts.oil || false, friendly,
   });
 };
 
@@ -705,7 +721,9 @@ En.update = function (dt) {
           e.vx = G.lerp(e.vx, Math.cos(a) * e.spd, dt * 3);
           e.vy = G.lerp(e.vy, Math.sin(a) * e.spd, dt * 3);
         } else {
+          En._shooter = e; // so eshots know their allegiance
           (AI[e.def.ai] || AI.chaser)(e, dt, target);
+          En._shooter = null;
         }
       } else { e.vx *= .9; e.vy *= .9; }
     } else { e.vx = 0; e.vy = 0; }
@@ -755,8 +773,8 @@ En.update = function (dt) {
         } else e.fireCd = .5;
       }
     }
-    // worm segments hurt player
-    if (e.segs) {
+    // worm segments hurt player (not if the worm is on your side)
+    if (e.segs && !e.friendly) {
       for (const s of e.segs) {
         if (p.iframes <= 0 && G.dist(s.x, s.y, p.x, p.y) < 8 + p.r) p.hurt(1, s);
       }
@@ -820,6 +838,18 @@ En.updateEshots = function (dt, room, p) {
       const na = G.aLerp(cur, want, s.homing * dt);
       const sp = Math.hypot(s.vx, s.vy);
       s.vx = Math.cos(na) * sp; s.vy = Math.sin(na) * sp;
+    }
+    // friendly bullets hunt enemies instead of you
+    if (s.friendly) {
+      s.x += s.vx * dt; s.y += s.vy * dt;
+      if (s.t > s.life || s.x < 34 || s.x > G.W - 34 || s.y < G.HUD_H + 34 || s.y > G.H - 34 || G.Dg.solidAt(s.x, s.y)) { room.eshots.splice(i, 1); continue; }
+      let hit = false;
+      for (const e of room.enemies) {
+        if (e.dead || e.friendly || e.spawnProt > 0 || e.state === 'hidden' || e.state === 'burrowed') continue;
+        if (G.dist(s.x, s.y, e.x, e.y) < s.r + e.r) { En.damage(e, 3, {}); Fx.hitSpark(s.x, s.y, '#58f08a'); hit = true; break; }
+      }
+      if (hit) { room.eshots.splice(i, 1); }
+      continue;
     }
     s.x += s.vx * dt * btSlow; s.y += s.vy * dt * btSlow;
     // fork prime: shots split mid-flight
@@ -924,6 +954,13 @@ En.draw = function (x) {
     x.drawImage(spr, -spr.width / 2, -spr.height / 2);
     x.restore();
     x.globalAlpha = 1;
+    // charmed heart marker
+    if (e.friendly && e.charmed) {
+      x.font = 'bold 8px monospace'; x.textAlign = 'center';
+      x.fillStyle = '#0b0b12'; x.fillText('♥', e.x + 1, e.y - e.r - 5);
+      x.fillStyle = '#ff4da6'; x.fillText('♥', e.x, e.y - e.r - 6 + Math.sin(G.time * 4) * 1.5);
+      x.textAlign = 'left';
+    }
     // champion ring
     if (e.champion) {
       x.strokeStyle = e.champion === 'crimson' ? '#ff5252' : e.champion === 'volt' ? '#ffe24d' : '#8a93a8';

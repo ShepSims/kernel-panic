@@ -61,6 +61,6 @@ T('Screen Cleaning Cloth', 'Clarity. +range, +luck', { rng: 30, luck: 1 });
 T('Retro Game Cartridge', 'Blow on it. Random small stat up per floor', { uniq: 'karmaSmall' });
 T('Unread Terms of Service', 'Power in ignorance. +damage, -luck', { dmg: .7, luck: -1 });
 T('Do Not Disturb Sign', 'Enemies notice you later', { uniq: 'slowAggro' });
-T('Company Seal (Stolen)', 'Authority. Charm chance +8%', { charm: .08 });
+T('Company Seal (Stolen)', 'Authority. Defeated foes may join you', { charm: .08 });
 T('Last Donut Guilt', 'You took it. +speed, enemies slightly angrier', { spd: .12, uniq: 'aggro' });
 T('Perfect Attendance Pin', 'Never missed a standup. +all stats tiny', { dmg: .2, tears: .08, spd: .04, luck: 1 });

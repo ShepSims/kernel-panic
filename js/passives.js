@@ -95,7 +95,7 @@ P('Rate Limiter', '30% chance to slow enemies', 2, { slow: .3 });
 P('Denial of Service', '50% slow, +fire rate', 3, { slow: .5, tears: .2 });
 P('Scary Error Sound', '20% chance to fear enemies', 2, { fear: .2 });
 P('Layoff Rumors', '35% fear, +damage', 3, { fear: .35, dmg: .4 });
-P('Social Engineering', '15% chance to charm enemies', 3, { charm: .15 });
+P('Social Engineering', 'Defeated enemies may join you (15%)', 3, { charm: .15 });
 P('Impact Font', 'Massive knockback', 2, { knock: 1 });
 // ---------- shot behavior: size / crit ----------
 P('Bloatware', 'Huge shots, -shot speed', 2, { shotScale: .5, shotspd: -.2 });
@@ -291,7 +291,7 @@ P('Garbage Day', 'Destroying obstacles may drop pickups', 2, { uniq: 'rockLoot' 
 P('X-Ray Vision Sticker', 'See through obstacles: shots ignore rocks', 2, { spectral: 1 });
 P('Long Weekend', 'Heal 2 + charge active on boss kill', 2, { uniq: 'bossReward' });
 P('Focus Room Booking', '+damage when no enemies within 100px', 2, { uniq: 'sniper' });
-P('Standup Comedian', 'Charm chance, +luck', 2, { charm: .1, luck: 1 });
+P('Standup Comedian', 'Defeated enemies may join you, +luck', 2, { charm: .1, luck: 1 });
 P('Free Swag Tee', '+1 shield cell', 1, { soul: 1 });
 P('Anime Figurine', 'Believe. +damage, +luck', 2, { dmg: .5, luck: 1 });
 P('Succulent Collection', 'Alive-ish. +1 battery, +poison chance', 2, { hp: 1, poison: .15 });
