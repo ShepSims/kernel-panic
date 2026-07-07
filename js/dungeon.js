@@ -466,8 +466,7 @@ Dg.nextFloor = function () {
   p.x = G.W / 2; p.y = (G.H + G.HUD_H) / 2 + 30;
   Sh.clear(); Fx.clear();
   Pl.onFloorStart();
-  const biome = Spr.BIOMES[(run.depth - 1) % 6];
-  G.run.floorBanner = { t: 3, name: biome.name + (run.endless && run.endlessLoop > 0 ? ' +' + run.endlessLoop : ''), depth: run.depth };
+  G.run.floorBanner = { t: 3, name: Dg.biomeName(run.depth) + (run.endless && run.endlessLoop > 0 ? ' +' + run.endlessLoop : ''), depth: run.depth };
   Au.setTheme((run.depth - 1) % 6);
   // map items
   if (p.hasUniq('mapReveal') || p.hasUniq('fullMap')) Dg.revealMap(false);
@@ -478,6 +477,12 @@ Dg.nextFloor = function () {
 
 // ---------- drawing ----------
 Dg.biome = function () { return Spr.BIOMES[(G.run.depth - 1) % 6]; };
+Dg.biomeName = function (depth) {
+  const i = ((depth || G.run.depth) - 1) % 6;
+  const skin = G.Mods.skin();
+  if (skin && skin.biomes && skin.biomes[i]) return skin.biomes[i];
+  return Spr.BIOMES[i].name;
+};
 Dg.drawRoom = function (x, room, ox, oy) {
   ox = ox || 0; oy = oy || 0;
   const B = Dg.biome();

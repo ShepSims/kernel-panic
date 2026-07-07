@@ -2,6 +2,11 @@
   "name": "kernel-panic",
   "version": "1.0.0",
   "private": true,
-  "description": "KERNEL PANIC — roguelike dungeon crawler. Static game + Vercel API + Supabase leaderboards.",
-  "engines": { "node": ">=18" }
+  "description": "KERNEL PANIC \u2014 roguelike dungeon crawler. Static game + Vercel API + Supabase leaderboards.",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "test": "node tests/run.js"
+  }
 }

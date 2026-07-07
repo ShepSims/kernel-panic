@@ -17,7 +17,7 @@ It.buildPools = function () {
 };
 It.isUnlocked = function (it) {
   const U = G.UNLOCK_ITEMS || {};
-  const req = U[it.kind + ':' + it.name];
+  const req = U[it.kind + ':' + (it.baseName || it.name)]; // unlock gating survives reskins
   return !req || G.meta.unlocks[req];
 };
 It.keyOf = it => (it.kind === 'active' ? 'a' : 'p') + it.id;

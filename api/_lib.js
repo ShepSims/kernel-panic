@@ -40,6 +40,12 @@ async function sha256hex(str) {
   return crypto.createHash('sha256').update(str, 'utf8').digest('hex');
 }
 
+// canonical + ascii-escaped form used for ruleset hashing (mirror of js/mods.js)
+function packHashInput(pack, version) {
+  const s = canon(pack) + '@' + version;
+  return s.replace(/[-￿]/g, c => '\\u' + c.charCodeAt(0).toString(16).padStart(4, '0'));
+}
+
 // verify a supabase auth JWT, return user id or null
 async function userFromToken(token) {
   if (!token) return null;
@@ -64,4 +70,4 @@ function cleanName(v) {
   return n.length >= 2 ? n : null;
 }
 
-module.exports = { sbHeaders, sbFetch, scoreOf, canon, sha256hex, userFromToken, cors, isUuid, cleanName };
+module.exports = { sbHeaders, sbFetch, scoreOf, canon, sha256hex, packHashInput, userFromToken, cors, isUuid, cleanName };

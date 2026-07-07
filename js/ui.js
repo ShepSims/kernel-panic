@@ -74,7 +74,7 @@ UI.drawHUD = function (x) {
   // floor label
   x.font = '7px monospace'; x.textAlign = 'center';
   x.fillStyle = Dg.biome().accent;
-  x.fillText('B' + G.run.depth + ' · ' + Dg.biome().name, G.W / 2 + 40, 12);
+  x.fillText('B' + G.run.depth + ' · ' + Dg.biomeName(), G.W / 2 + 40, 12);
   if (G.run.endless) { x.fillStyle = '#ff4da6'; x.fillText('ENDLESS', G.W / 2 + 40, 22); }
   x.textAlign = 'left';
   UI.drawMinimap(x);
@@ -163,22 +163,32 @@ UI.drawMenu = function (x, items, y0, dy) {
 // ---------- title ----------
 UI.title = function (x, dt) {
   UI.frame(x, null);
-  // glitchy logo
+  // glitchy logo (skin-aware)
+  const skin = G.Mods.skin();
+  const line1 = (skin && skin.title && skin.title[0]) || 'KERNEL';
+  const line2 = (skin && skin.title && skin.title[1]) || 'PANIC';
+  const tagline = (skin && skin.tagline) || 'the last engineer descends';
+  const accent = skin ? '#2fbf71' : '#4df3ff';
   x.textAlign = 'center';
   const gl = Math.sin(G.time * 17) > .92 ? G.fR(-2, 2) : 0;
   x.font = 'bold 30px monospace';
-  x.fillStyle = '#ff3355'; x.fillText('KERNEL', G.W / 2 + gl + 1, 74);
-  x.fillStyle = '#4df3ff'; x.fillText('KERNEL', G.W / 2 + gl - 1, 72);
-  x.fillStyle = '#eef4ff'; x.fillText('KERNEL', G.W / 2 + gl, 73);
-  x.fillStyle = '#ff3355'; x.fillText('PANIC', G.W / 2 - gl + 1, 102);
-  x.fillStyle = '#4df3ff'; x.fillText('PANIC', G.W / 2 - gl - 1, 100);
-  x.fillStyle = '#eef4ff'; x.fillText('PANIC', G.W / 2 - gl, 101);
+  x.fillStyle = '#ff3355'; x.fillText(line1, G.W / 2 + gl + 1, 74);
+  x.fillStyle = accent; x.fillText(line1, G.W / 2 + gl - 1, 72);
+  x.fillStyle = '#eef4ff'; x.fillText(line1, G.W / 2 + gl, 73);
+  x.fillStyle = '#ff3355'; x.fillText(line2, G.W / 2 - gl + 1, 102);
+  x.fillStyle = accent; x.fillText(line2, G.W / 2 - gl - 1, 100);
+  x.fillStyle = '#eef4ff'; x.fillText(line2, G.W / 2 - gl, 101);
   x.font = '8px monospace'; x.fillStyle = '#8a93a8';
-  x.fillText('the last engineer descends', G.W / 2, 118);
+  x.fillText(tagline, G.W / 2, 118);
   x.textAlign = 'left';
   const hasRun = !!G.loadRunSave();
+  const fbPack = G.Mods.builtins()[0] || null;
+  const fbActive = fbPack && G.Mods.active === fbPack;
+  const fbLabel = fbPack ? (fbActive ? 'SKIN: FASTBREAK ●' : 'SKIN: FASTBREAK ○') : null;
   const items = (hasRun ? ['CONTINUE RUN'] : []).concat(
-    ['NEW RUN', 'ENDLESS MODE', 'LEADERBOARDS', 'MODS', 'STATISTICS', 'ACHIEVEMENTS', 'ITEM LOG', 'HELP']);
+    ['NEW RUN', 'ENDLESS MODE'],
+    fbLabel ? [fbLabel] : [],
+    ['LEADERBOARDS', 'MODS', 'STATISTICS', 'ACHIEVEMENTS', 'ITEM LOG', 'HELP']);
   UI.menuNav(items.length);
   UI.drawMenu(x, items, 138, 13);
   // active mod badge
@@ -199,6 +209,10 @@ UI.title = function (x, dt) {
     if (pick === 'CONTINUE RUN') G.startRun({ continueData: G.loadRunSave() });
     else if (pick === 'NEW RUN') G.startRun({});
     else if (pick === 'ENDLESS MODE') G.startRun({ endless: true });
+    else if (pick.startsWith('SKIN: FASTBREAK')) {
+      G.Mods.setActive(fbActive ? null : fbPack);
+      G.toast(fbActive ? 'BACK TO KERNEL PANIC' : 'FASTBREAK EDITION — GAME ON', '#2fbf71');
+    }
     else if (pick === 'LEADERBOARDS') { G.state = 'leader'; UI.leaderCache = null; }
     else if (pick === 'MODS') { G.state = 'mods'; UI.sel = 0; }
     else if (pick === 'STATISTICS') G.state = 'stats';
@@ -263,7 +277,7 @@ UI.dead = function (x, dt) {
   if (G.stateT < .8) return;
   x.textAlign = 'center';
   x.font = 'bold 20px monospace';
-  x.fillStyle = '#ff3355'; x.fillText('CONNECTION TERMINATED', G.W / 2, 70);
+  x.fillStyle = '#ff3355'; x.fillText(G.Mods.skinStr('deathTitle', 'CONNECTION TERMINATED'), G.W / 2, 70);
   x.font = 'italic 8px monospace'; x.fillStyle = '#8a93a8';
   x.fillText(d.line, G.W / 2, 92);
   x.font = '8px monospace'; x.fillStyle = '#eef4ff';
@@ -298,11 +312,11 @@ UI.win = function (x, dt) {
   x.font = 'bold 22px monospace';
   const hue = (G.time * 40) % 360;
   x.fillStyle = 'hsl(' + hue + ',70%,70%)';
-  x.fillText('SHUTDOWN COMPLETE', G.W / 2, 66);
+  x.fillText(G.Mods.skinStr('winTitle', 'SHUTDOWN COMPLETE'), G.W / 2, 66);
   x.font = 'italic 8px monospace'; x.fillStyle = '#8a93a8';
   x.fillText(w.line, G.W / 2, 90);
   x.font = '8px monospace'; x.fillStyle = '#eef4ff';
-  const rows = ['PARADIGM decommissioned', 'kills: ' + w.kills + ' · items: ' + w.items + ' · time: ' + UI.fmtTime(w.time)];
+  const rows = [G.Mods.skinStr('winSub', 'PARADIGM decommissioned'), 'kills: ' + w.kills + ' · items: ' + w.items + ' · time: ' + UI.fmtTime(w.time)];
   if (G.lastRunPayload) {
     let line = 'score: ' + G.lastRunPayload.score;
     if (G.Net.enabled && G.Net.pendingSubmit) line += '  ·  [N] SET NAME & SUBMIT';
@@ -556,6 +570,7 @@ UI.mods = function (x) {
   UI.frame(x, 'MODS — DATA PACKS');
   const Mods = G.Mods, Net = G.Net;
   const entries = [{ label: 'OFFICIAL (VANILLA)', pack: null }]
+    .concat(Mods.builtins().map(m => ({ label: ((m.meta && m.meta.name) || 'built-in') + ' [BUILT-IN]', pack: m })))
     .concat(Mods.local.map(m => ({ label: ((m.meta && m.meta.name) || 'unnamed pack'), pack: m, real: true })))
     .concat([
       { act: 'import', label: '+ IMPORT PACK FILE' },

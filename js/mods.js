@@ -98,7 +98,7 @@ Mods.rulesetIdOf = function (pack) {
 // ---------- validation (mirror of api/publish-mod.js) ----------
 Mods.validate = function (pack) {
   if (!pack || typeof pack !== 'object' || Array.isArray(pack)) return 'pack must be an object';
-  const KEYS = ['meta', 'global', 'player', 'enemies', 'bosses', 'items', 'newItems'];
+  const KEYS = ['meta', 'global', 'player', 'enemies', 'bosses', 'items', 'newItems', 'skin', 'actives', 'trinkets'];
   for (const k of Object.keys(pack)) if (!KEYS.includes(k)) return 'unknown key: ' + k;
   const json = JSON.stringify(pack);
   if (json.length > 60000) return 'pack too large';
@@ -112,6 +112,22 @@ Mods.validate = function (pack) {
   })(pack);
   if (bad) return bad;
   if (pack.newItems && (!Array.isArray(pack.newItems) || pack.newItems.length > 50)) return 'newItems: max 50';
+  // skin: strings only, bounded
+  if (pack.skin) {
+    const s = pack.skin;
+    if (typeof s !== 'object' || Array.isArray(s)) return 'skin must be an object';
+    let badStr = null;
+    (function walkS(v) {
+      if (badStr) return;
+      if (typeof v === 'string' && v.length > 400) badStr = 'skin string too long';
+      else if (Array.isArray(v)) v.forEach(walkS);
+      else if (v && typeof v === 'object') Object.values(v).forEach(walkS);
+    })(s);
+    if (badStr) return badStr;
+    if (s.playerColors) for (const k in s.playerColors) {
+      if (!/^#[0-9a-fA-F]{3,8}$/.test(String(s.playerColors[k]))) return 'skin.playerColors: hex colors only';
+    }
+  }
   return null;
 };
 
@@ -121,16 +137,30 @@ Mods.snapshot = function () {
   Mods._pristine = {
     passiveCount: G.PASSIVES.length,
     fx: G.PASSIVES.map(it => JSON.parse(JSON.stringify(it.fx))),
+    pNames: G.PASSIVES.map(it => [it.name, it.desc]),
+    aNames: G.ACTIVES.map(it => [it.name, it.desc]),
+    tNames: G.TRINKETS.map(it => [it.name, it.desc]),
+    pal: JSON.parse(JSON.stringify({ hoodie: Spr.PAL.hoodie, hoodieL: Spr.PAL.hoodieL, hoodieD: Spr.PAL.hoodieD })),
   };
+  for (const it of G.PASSIVES) it.baseName = it.name;
+  for (const it of G.ACTIVES) it.baseName = it.name;
 };
 Mods.restore = function () {
   if (!Mods._pristine) return;
   G.PASSIVES.length = Mods._pristine.passiveCount; // drop custom items
   for (let i = 0; i < G.PASSIVES.length; i++) {
     G.PASSIVES[i].fx = JSON.parse(JSON.stringify(Mods._pristine.fx[i]));
+    G.PASSIVES[i].name = Mods._pristine.pNames[i][0];
+    G.PASSIVES[i].desc = Mods._pristine.pNames[i][1];
     delete G.PASSIVES[i].modRemoved;
   }
+  for (let i = 0; i < G.ACTIVES.length; i++) { G.ACTIVES[i].name = Mods._pristine.aNames[i][0]; G.ACTIVES[i].desc = Mods._pristine.aNames[i][1]; delete G.ACTIVES[i].modRemoved; }
+  for (let i = 0; i < G.TRINKETS.length; i++) { G.TRINKETS[i].name = Mods._pristine.tNames[i][0]; G.TRINKETS[i].desc = Mods._pristine.tNames[i][1]; }
+  Object.assign(Spr.PAL, Mods._pristine.pal);
+  Mods.skinData = null;
+  if (Spr.cache.player) Spr.buildPlayer();
 };
+Mods.str = (v, max) => typeof v === 'string' ? v.slice(0, max) : null;
 Mods.cleanFx = function (fx) {
   const out = {};
   for (const k of Mods.FX_WHITELIST) if (typeof fx[k] === 'number' && isFinite(fx[k])) out[k] = G.clamp(fx[k], -20, 20);
@@ -160,13 +190,69 @@ Mods.applyActive = function () {
     const o = pack.bosses[b];
     fxNorm.bosses[b] = { hp: num(o.hp, 1, .1, 20), dmg: o.dmg !== undefined ? G.clamp(o.dmg | 0, 0, 4) : null };
   }
-  // item overrides / removals
+  // item overrides / removals / reskins (matched by original name)
   for (const name in (pack.items || {})) {
-    const it = G.PASSIVES.find(i => i.name === name);
+    const it = G.PASSIVES.find(i => (i.baseName || i.name) === name);
     if (!it) continue;
     const o = pack.items[name];
     if (o && o.remove) { it.modRemoved = true; continue; }
     Object.assign(it.fx, Mods.cleanFx(o || {}));
+    if (o && o.name) it.name = Mods.str(o.name, 34) || it.name;
+    if (o && o.desc) it.desc = Mods.str(o.desc, 64) || it.desc;
+  }
+  // active/trinket reskins (name/desc only — behavior is untouchable)
+  for (const name in (pack.actives || {})) {
+    const it = G.ACTIVES.find(i => (i.baseName || i.name) === name);
+    if (!it) continue;
+    const o = pack.actives[name] || {};
+    if (o.name) it.name = Mods.str(o.name, 34) || it.name;
+    if (o.desc) it.desc = Mods.str(o.desc, 64) || it.desc;
+  }
+  for (const name in (pack.trinkets || {})) {
+    const it = G.TRINKETS.find(i => i.name === name);
+    if (!it) continue;
+    const o = pack.trinkets[name] || {};
+    if (o.name) it.name = Mods.str(o.name, 34) || it.name;
+    if (o.desc) it.desc = Mods.str(o.desc, 64) || it.desc;
+  }
+  // ---------- skin: pure cosmetics ----------
+  Mods.skinData = null;
+  if (pack.skin) {
+    const s = pack.skin;
+    const skin = {
+      title: Array.isArray(s.title) ? s.title.slice(0, 2).map(v => Mods.str(v, 12) || '') : null,
+      tagline: Mods.str(s.tagline, 60),
+      biomes: Array.isArray(s.biomes) ? s.biomes.slice(0, 6).map(v => Mods.str(v, 26) || '') : null,
+      bosses: {},
+      strings: {},
+      lore: null,
+      playerColors: null,
+    };
+    for (const k in (s.bosses || {})) {
+      if (!G.Boss.KINDS[k]) continue;
+      skin.bosses[k] = { name: Mods.str(s.bosses[k].name, 26), sub: Mods.str(s.bosses[k].sub, 40) };
+    }
+    for (const k of ['deathTitle', 'winTitle', 'winSub', 'currency']) skin.strings[k] = Mods.str((s.strings || {})[k], 40);
+    if (s.lore && typeof s.lore === 'object') {
+      const arr = (v, n, len) => Array.isArray(v) ? v.slice(0, n).map(x => Mods.str(x, len)).filter(Boolean) : null;
+      skin.lore = {
+        terminals: Array.isArray(s.lore.terminals) ? s.lore.terminals.slice(0, 6).map(band => arr(band, 10, 160) || []) : null,
+        graffiti: Array.isArray(s.lore.graffiti) ? s.lore.graffiti.slice(0, 6).map(band => arr(band, 8, 80) || []) : null,
+        intros: arr(s.lore.intros, 6, 160),
+        deaths: arr(s.lore.deaths, 10, 100),
+        wins: arr(s.lore.wins, 10, 100),
+      };
+    }
+    if (s.playerColors) {
+      skin.playerColors = {};
+      for (const k of ['hoodie', 'hoodieL', 'hoodieD']) {
+        const c = s.playerColors[k];
+        if (typeof c === 'string' && /^#[0-9a-fA-F]{3,8}$/.test(c)) skin.playerColors[k] = c;
+      }
+      Object.assign(Spr.PAL, skin.playerColors);
+      if (Spr.cache.player) Spr.buildPlayer();
+    }
+    Mods.skinData = skin;
   }
   // new data-only items
   for (const ni of (pack.newItems || [])) {
@@ -207,7 +293,7 @@ Mods.install = function (pack) {
   Mods.saveLocal();
   return null;
 };
-Mods.setActive = function (pack) { Mods.active = pack; Mods.saveLocal(); };
+Mods.setActive = function (pack) { Mods.active = pack; Mods.saveLocal(); Mods.applyActive(); };
 
 // ---------- import / export via files ----------
 Mods.importFile = function (cb) {
@@ -254,4 +340,27 @@ Mods.examplePack = function () {
   };
 };
 
-Mods.init = function () { Mods.snapshot(); Mods.loadLocal(); };
+// active skin accessor (null when vanilla)
+Mods.skin = function () { return Mods.skinData || null; };
+Mods.skinStr = function (key, fallback) {
+  const s = Mods.skinData;
+  return (s && s.strings && s.strings[key]) || fallback;
+};
+
+// built-in packs shipped with the game
+Mods.builtins = function () {
+  return (typeof G.FASTBREAK_PACK !== 'undefined' && G.FASTBREAK_PACK) ? [G.FASTBREAK_PACK] : [];
+};
+
+Mods.init = function () {
+  Mods.snapshot();
+  Mods.loadLocal();
+  // re-resolve built-in active pack after reload
+  const activeId = localStorage.getItem('kp_mod_active');
+  if (activeId && activeId !== 'official' && !Mods.active) {
+    const b = Mods.builtins().find(m => Mods.rulesetIdOf(m) === activeId);
+    if (b) Mods.active = b;
+  }
+  // apply cosmetics immediately so the title screen reflects the skin
+  Mods.applyActive();
+};

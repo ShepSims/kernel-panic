@@ -1,10 +1,10 @@
 'use strict';
 // POST /api/publish-mod — register a data pack as a ruleset.
 // The server recomputes the canonical hash: the pack IS its identity.
-const { sbHeaders, sbFetch, canon, sha256hex, cors, cleanName } = require('./_lib');
+const { sbHeaders, sbFetch, sha256hex, packHashInput, cors, cleanName } = require('./_lib');
 
 // data-only pack: whitelist of top-level keys and value types
-const PACK_KEYS = ['meta', 'global', 'player', 'enemies', 'bosses', 'items', 'newItems'];
+const PACK_KEYS = ['meta', 'global', 'player', 'enemies', 'bosses', 'items', 'newItems', 'skin', 'actives', 'trinkets'];
 
 function validatePack(pack) {
   if (!pack || typeof pack !== 'object' || Array.isArray(pack)) return 'pack must be an object';
@@ -37,8 +37,8 @@ module.exports = async function handler(req, res) {
     const author = cleanName(meta.author);
     if (!name) return res.status(400).json({ error: 'pack.meta.name required (2-40 chars)' });
     const version = typeof b.version === 'string' ? b.version.slice(0, 16) : '1.0.0';
-    // identity = hash of canonical pack + target version
-    const hash = await sha256hex(canon(pack) + '@' + version);
+    // identity = hash of canonical (ascii-escaped) pack + target version
+    const hash = await sha256hex(packHashInput(pack, version));
     const id = 'mod-' + hash.slice(0, 16);
     const row = {
       id, kind: 'mod', name, author,

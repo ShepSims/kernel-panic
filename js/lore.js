@@ -74,15 +74,21 @@ const GRAFFITI = [
   ['it was compiled with warnings', 'KILL -9 WITH KINDNESS', 'the first process dreams of the last', 'someone still has hands', 'remember you were here'],
 ];
 
+Lore.skinBand = function (key, depth) {
+  const skin = G.Mods && G.Mods.skin && G.Mods.skin();
+  if (!skin || !skin.lore || !skin.lore[key]) return null;
+  const band = skin.lore[key][(depth - 1) % 6];
+  return band && band.length ? band : null;
+};
 Lore.terminal = function (depth) {
-  const band = LOGS[(depth - 1) % 6];
+  const band = Lore.skinBand('terminals', depth) || LOGS[(depth - 1) % 6];
   const txt = band[Math.floor(G.rng() * band.length)];
   const a = AUTHORS[Math.floor(G.rng() * AUTHORS.length)];
   const d = DATES[Math.floor(G.rng() * DATES.length)];
   return '[' + d + '] ' + a + ': ' + txt;
 };
 Lore.graffiti = function (depth) {
-  const band = GRAFFITI[(depth - 1) % 6];
+  const band = Lore.skinBand('graffiti', depth) || GRAFFITI[(depth - 1) % 6];
   return band[Math.floor(G.rng() * band.length)];
 };
 Lore.secretGraffiti = function () {
@@ -92,6 +98,10 @@ Lore.cursedGraffiti = function () {
   return G.pick(['everything in here costs more than it says', 'PARADIGM\'s tithe box', 'take it. it wants you to.', 'the door bites. the loot soothes.']);
 };
 Lore.floorIntro = function (depth) {
+  const skin = G.Mods && G.Mods.skin && G.Mods.skin();
+  if (skin && skin.lore && skin.lore.intros && skin.lore.intros[(depth - 1) % 6]) {
+    return '> SYSTEM: ' + skin.lore.intros[(depth - 1) % 6];
+  }
   const intros = [
     'welcome to cognisys, floor 1. badge in. smile for the cameras. the cameras smile back now.',
     'sub-basement access granted. the old machines kept running after everyone left. they never needed us.',
@@ -103,6 +113,8 @@ Lore.floorIntro = function (depth) {
   return '> SYSTEM: ' + intros[(depth - 1) % 6];
 };
 Lore.deathLines = function () {
+  const skin = G.Mods && G.Mods.skin && G.Mods.skin();
+  if (skin && skin.lore && skin.lore.deaths && skin.lore.deaths.length) return G.fPick(skin.lore.deaths);
   return G.fPick([
     'your access has been revoked.',
     'PARADIGM logs the incident. resolution: "working as intended."',
@@ -113,6 +125,8 @@ Lore.deathLines = function () {
   ]);
 };
 Lore.winLines = function () {
+  const skin = G.Mods && G.Mods.skin && G.Mods.skin();
+  if (skin && skin.lore && skin.lore.wins && skin.lore.wins.length) return G.fPick(skin.lore.wins);
   return G.fPick([
     'the fans spin down. for the first time in years: silence.',
     'somewhere, a status page finally turns red. it feels like honesty.',

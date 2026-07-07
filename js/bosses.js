@@ -63,7 +63,15 @@ Boss.forDepth = function (depth) {
 Boss.spawnInRoom = function (room, depth) {
   const kind = Boss.forDepth(depth);
   G.run.lastBossKind = kind;
-  const K = Boss.KINDS[kind];
+  let K = Boss.KINDS[kind];
+  // skin reskins: name & subtitle only
+  const skin = G.Mods.skin();
+  if (skin && skin.bosses[kind]) {
+    K = Object.assign({}, K, {
+      name: skin.bosses[kind].name || K.name,
+      sub: skin.bosses[kind].sub || K.sub,
+    });
+  }
   const e = {
     type: 'boss_' + kind, bossKind: kind, boss: true,
     def: { name: K.name, ai: 'boss', col: K.col, ghost: kind === 'hallucination', size: K.r * 2, shape: 'blob', tag: 'boss' },

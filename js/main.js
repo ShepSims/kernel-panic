@@ -60,8 +60,7 @@ G.startRun = function (opts) {
   p.x = G.W / 2; p.y = (G.H + G.HUD_H) / 2 + 30;
   Sh.clear(); Fx.clear();
   Pl.onFloorStart();
-  const biome = Spr.BIOMES[(G.run.depth - 1) % 6];
-  G.run.floorBanner = { t: 3, name: biome.name, depth: G.run.depth };
+  G.run.floorBanner = { t: 3, name: Dg.biomeName(G.run.depth), depth: G.run.depth };
   G.meta.deepestFloor = Math.max(G.meta.deepestFloor, G.run.depth);
   G.state = 'run';
   G.stateT = 0;
